@@ -295,7 +295,7 @@ def distrp3(x,A0,A1,A2,x0,x1,x2,s0,s1,s2):
 def distr1(x, A, x0,sx):
     return bg1+A/sx*np.exp(-(x-x0)**2/(2*(sx)**2))
 
-for k in range(6,7):#len(foldername)):
+for k in range(10,len(foldername)):
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
     controlfits = data_analysis + "Control Fits/" 
     if os.path.exists(controlfits):
@@ -316,7 +316,8 @@ for k in range(6,7):#len(foldername)):
     yp1=[]
     yp2=[]
     yp3=[]
-    data_and_fit = np.zeros((len(stack[0,0,:])*len(roi[:,0]), 20))
+    print(foldername[k])
+    #data_and_fit = np.zeros((len(stack[0,0,:])*len(roi[:,0]), 20))
     for y in range(len(roi[:,0])):   
         if (roi[y][2] == roi[y][1]):
             bg1 = sum(stack[roi[y][0],xabsmax-20:xabsmax-3,0])/len(stack[roi[y][0],xabsmax-20:xabsmax-3,0])
@@ -349,13 +350,13 @@ for k in range(6,7):#len(foldername)):
                 boundm = [[0.2,0.,0.,-2.,abs(roi[y][5]-xabsmax)-4, abs(roi[y][5]-xabsmax)+2,0.01,0.1,0.1],[1.5,1.5,0.4,2.,abs(roi[y][1]-xabsmax),abs(roi[y][1]-xabsmax), 1.,1.5,2.]]
             if(roi[y][3]>1):    
                 P0m = [1.,0.3,0.1, 0., abs(roi[y][5]-xabsmax)-2, abs(roi[y][5]-xabsmax)+8, 0.5, 0.5, 0.5]
-                boundm = [[0.2,0.,0.,-2.,abs(roi[y][5]-xabsmax)-4, abs(roi[y][5]-xabsmax)+5,0.01,0.1,0.1],[1.5,1.5,0.4,2.,abs(roi[y][1]-xabsmax),abs(roi[y][1]-xabsmax)-2, 1.,1.5,2.]]
+                boundm = [[0.2,0.,0.,-2.,abs(roi[y][5]-xabsmax)-4, abs(roi[y][5]-xabsmax)+5,0.01,0.1,0.1],[1.5,1.5,0.4,2.,abs(roi[y][1]-xabsmax),abs(roi[y][1]-xabsmax), 1.,1.5,2.]]
             if(roi[y][4]==1):
                 P0p = [1.,0.,0., 0., abs(roi[y][6]-xabsmax)-2, abs(roi[y][6]-xabsmax)+3, 0.5, 1., 1.5]
-                boundp = [[0.2,0,0,-2.,abs(roi[y][6]-xabsmax)-4, abs(roi[y][6]-xabsmax)+2,0.01,0.1,0.1],[2.,0.4,1e-8,2.,abs(roi[y][2]-xabsmax),abs(roi[y][2]-xabsmax), 1,1.5,2.]]
+                boundp = [[0.2,0,0,-2.,abs(roi[y][6]-xabsmax)-4, abs(roi[y][6]-xabsmax)+1,0.01,0.1,0.1],[2.,0.4,1e-8,2.,abs(roi[y][2]-xabsmax),abs(roi[y][2]-xabsmax), 1,1.5,2.]]
             if(roi[y][4]>1):    
                 P0p = [1.,0.,0., 0., abs(roi[y][6]-xabsmax)-2, abs(roi[y][6]-xabsmax)+3, 0.5, 1., 1.5]
-                boundp = [[0.2,0,0,-2.,abs(roi[y][6]-xabsmax)-4, abs(roi[y][6]-xabsmax)+2,0.01,0.1,0.1],[2.,0.4,1e-8,2.,abs(roi[y][2]-xabsmax),abs(roi[y][2]-xabsmax)-1, 1,1.5,2.]]
+                boundp = [[0.2,0,0,-2.,abs(roi[y][6]-xabsmax)-4, abs(roi[y][6]-xabsmax)+2,0.01,0.1,0.1],[2.,0.4,1e-8,2.,abs(roi[y][2]-xabsmax),abs(roi[y][2]-xabsmax), 1,1.5,2.]]
             P0maus=P0m.copy()
             P0paus=P0p.copy()
             boundmaus=boundm.copy()
@@ -408,7 +409,7 @@ for k in range(6,7):#len(foldername)):
                         boundm[0][j]=boundmaus[0][j]
                         boundm[1][j]=boundmaus[1][j]
                     if (boundp[0][j]>=boundp[1][j]):
-                        print(j,"p",boundm[0][j],boundm[1][j])
+                        print(j,"p",boundp[0][j],boundp[1][j])
                         boundp[0][j]=boundpaus[0][j]
                         boundp[1][j]=boundpaus[1][j]
                 #print(P0m, P0p)
@@ -461,12 +462,12 @@ for k in range(6,7):#len(foldername)):
                         pm,covm=fit(distrm3,data[:,0][data[:,0]<3],data[:,1][data[:,0]<3], p0=P0m, bounds = boundmt)
                         pp,covp=fit(distrp3,data[:,0][data[:,0]>-3],data[:,1][data[:,0]>-3], p0=P0p, bounds = boundpt)
                     except RuntimeError or ValueError:
-                        print('error Line ' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z)))
+                        print('error'+foldername[k] +' Line ' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z)))
                         print(P0m, P0p)
                         print(boundmt)
                         print(boundpt)
-                data_and_fit[z*len(roi[:,0])+y][0] = z
-                data_and_fit[z*len(roi[:,0])+y][1] = roi[y][0]
+                # data_and_fit[z*len(roi[:,0])+y][0] = z
+                # data_and_fit[z*len(roi[:,0])+y][1] = roi[y][0]
                 P0m=pm.copy()
                 P0p=pp.copy()
                 xplt=np.linspace(data[:, 0][0], data[:, 0][-1], 1000)
@@ -492,19 +493,23 @@ for k in range(6,7):#len(foldername)):
                 else:
                     boundp[1][5]=P0p[4]+4
                     boundp[0][5]=P0p[4]+2
-    with open(data_analysis+foldername[k]+'Data and Fit.mpa', 'w') as f:
-        np.savetxt(f,data_and_fit, header="theta line A0m A1m A2m x0m x1m x2m s0m s1m s2m A0p A1p A2p x0p x1p x2p s0p s1p s2p", fmt="%1.0f")
+    # with open(data_analysis+foldername[k]+'Data and Fit.mpa', 'w') as f:
+    #     np.savetxt(f,data_and_fit, header="theta line A0m A1m A2m x0m x1m x2m s0m s1m s2m A0p A1p A2p x0p x1p x2p s0p s1p s2p", fmt="%1.0f")
 """
 This block copies the fits in a common folder just 
 for the sake of simplicity
 """
-
 # if os.path.exists(allcontrolfits):
 #     shutil.rmtree(allcontrolfits)
 # os.makedirs(allcontrolfits)
 # for k in range(len(foldername)):
-#     folder = sorted_fold_path+foldername[k] 
-#     for j in range(len(roi[:,0])):
-#         contfitname = foldername[k] +'_line' +str("%0d"%(roi[0][0]+j))+'_fit.png'
-#         shutil.copy(folder+"/Data Analysis/Control Plots/"+contfitname, allcontrolplots+contfitname)        
-                       
+#     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
+#     folder = sorted_fold_path+foldername[k]
+#     roi =  np.loadtxt(data_analysis+foldername[k]+'_ROI+Peaks.mpa',skiprows=1).astype(int)
+#     for y in range(len(roi[:,0])):
+#         for z in range(1,n_theta[k]+1):
+#             contfitname = foldername[k] +'_line_' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z))+'_fit.png'
+#             try:
+#                 shutil.copy(folder+"/Data Analysis/Control Fits/"+contfitname, allcontrolfits+contfitname)        
+#             except FileNotFoundError:
+#                 print("not there motherfucker")
