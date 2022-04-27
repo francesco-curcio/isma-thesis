@@ -295,7 +295,7 @@ def distrp3(x,A0,A1,A2,x0,x1,x2,s0,s1,s2):
 def distr1(x, A, x0,sx):
     return bg1+A/sx*np.exp(-(x-x0)**2/(2*(sx)**2))
 
-for k in range(10,len(foldername)):
+for k in range(0,1):#len(foldername)):
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
     controlfits = data_analysis + "Control Fits/" 
     if os.path.exists(controlfits):
@@ -317,7 +317,7 @@ for k in range(10,len(foldername)):
     yp2=[]
     yp3=[]
     print(foldername[k])
-    #data_and_fit = np.zeros((len(stack[0,0,:])*len(roi[:,0]), 20))
+    data_and_fit = np.zeros((len(stack[0,0,:])*len(roi[:,0]), 20))
     for y in range(len(roi[:,0])):   
         if (roi[y][2] == roi[y][1]):
             bg1 = sum(stack[roi[y][0],xabsmax-20:xabsmax-3,0])/len(stack[roi[y][0],xabsmax-20:xabsmax-3,0])
@@ -344,6 +344,10 @@ for k in range(10,len(foldername)):
                 ax.plot(xplt, distr1(xplt,*p)*(ymax-ymin)+ymin, "r-")
                 plt.savefig(controlfits+foldername[k] +'_line_' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z))+'_fit.png')
                 plt.close(fig)
+                data_and_fit[z*len(roi[:,0])+y][0] = z
+                data_and_fit[z*len(roi[:,0])+y][1] = roi[y][0]
+                for j in range(len(P0)):
+                    data_and_fit[z*len(roi[:,0])+y][j*3+2] = P0[j]
         if (roi[y][3]>1 or roi[y][4]>1):
             if(roi[y][3]==1):
                 P0m = [1.,0.3,0.1, 0., abs(roi[y][5]-xabsmax)-2, abs(roi[y][5]-xabsmax)+8, 0.5, 0.5, 0.5]
@@ -394,7 +398,7 @@ for k in range(10,len(foldername)):
                     P0p[1]=0.
                     boundp[1][2] = 1e-8
                     P0p[2]=0.
-                if(z>zmin2-2):
+                if(z>zmin2-4):
                     if(z>zmin2+2):
                         boundp[1][2] = 0.3
                     else:
@@ -404,14 +408,14 @@ for k in range(10,len(foldername)):
                         P0m[j]=(boundm[1][j]-boundm[0][j])/3+boundm[0][j]
                     if (P0p[j]<=boundp[0][j] or P0p[j]>=boundp[1][j]):
                         P0p[j]=(boundp[1][j]-boundp[0][j])/3+boundp[0][j]
-                    if (boundm[0][j]>=boundm[1][j]):
-                        print(j,"m",boundm[0][j],boundm[1][j])
-                        boundm[0][j]=boundmaus[0][j]
-                        boundm[1][j]=boundmaus[1][j]
-                    if (boundp[0][j]>=boundp[1][j]):
-                        print(j,"p",boundp[0][j],boundp[1][j])
-                        boundp[0][j]=boundpaus[0][j]
-                        boundp[1][j]=boundpaus[1][j]
+                    # if (boundm[0][j]>=boundm[1][j]):
+                    #     print(j,"m",boundm[0][j],boundm[1][j])
+                    #     boundm[0][j]=boundmaus[0][j]
+                    #     boundm[1][j]=boundmaus[1][j]
+                    # if (boundp[0][j]>=boundp[1][j]):
+                    #     print(j,"p",boundp[0][j],boundp[1][j])
+                    #     boundp[0][j]=boundpaus[0][j]
+                    #     boundp[1][j]=boundpaus[1][j]
                 #print(P0m, P0p)
                 # for j in range(len(P0p)):
                 #     if (P0p[j]<boundp[0][j] or P0p[j]>boundp[1][j]):
@@ -447,7 +451,7 @@ for k in range(10,len(foldername)):
                             P0p[1]=0.
                             boundp[1][2] = 1e-8
                             P0p[2]=0.
-                        if(z>zmin2-3):
+                        if(z>zmin2-4):
                             if(z>zmin2+2):
                                 boundp[1][2] = 0.3
                             else:
@@ -466,10 +470,13 @@ for k in range(10,len(foldername)):
                         print(P0m, P0p)
                         print(boundmt)
                         print(boundpt)
-                # data_and_fit[z*len(roi[:,0])+y][0] = z
-                # data_and_fit[z*len(roi[:,0])+y][1] = roi[y][0]
+                data_and_fit[z*len(roi[:,0])+y][0] = z
+                data_and_fit[z*len(roi[:,0])+y][1] = roi[y][0]
                 P0m=pm.copy()
                 P0p=pp.copy()
+                for j in range(len(P0m)):
+                    data_and_fit[z*len(roi[:,0])+y][j+2] = P0m[j]
+                    data_and_fit[z*len(roi[:,0])+y][j+2+len(P0m)] = P0p[j]
                 xplt=np.linspace(data[:, 0][0], data[:, 0][-1], 1000)
                 ax.plot(xplt, distrm3(xplt,*pm)*(ymax-ymin)+ymin, "b--")
                 ax.plot(xplt, distrp3(xplt,*pp)*(ymax-ymin)+ymin, "b--")
@@ -493,23 +500,23 @@ for k in range(10,len(foldername)):
                 else:
                     boundp[1][5]=P0p[4]+4
                     boundp[0][5]=P0p[4]+2
-    # with open(data_analysis+foldername[k]+'Data and Fit.mpa', 'w') as f:
-    #     np.savetxt(f,data_and_fit, header="theta line A0m A1m A2m x0m x1m x2m s0m s1m s2m A0p A1p A2p x0p x1p x2p s0p s1p s2p", fmt="%1.0f")
+    with open(data_analysis+foldername[k]+'_fit+data.mpa', 'w') as f:
+        np.savetxt(f,data_and_fit, header="theta line A0m A1m A2m x0m x1m x2m s0m s1m s2m A0p A1p A2p x0p x1p x2p s0p s1p s2p", fmt="%i %i "+"%.18e "*18)
 """
 This block copies the fits in a common folder just 
 for the sake of simplicity
 """
-# if os.path.exists(allcontrolfits):
-#     shutil.rmtree(allcontrolfits)
-# os.makedirs(allcontrolfits)
-# for k in range(len(foldername)):
-#     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
-#     folder = sorted_fold_path+foldername[k]
-#     roi =  np.loadtxt(data_analysis+foldername[k]+'_ROI+Peaks.mpa',skiprows=1).astype(int)
-#     for y in range(len(roi[:,0])):
-#         for z in range(1,n_theta[k]+1):
-#             contfitname = foldername[k] +'_line_' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z))+'_fit.png'
-#             try:
-#                 shutil.copy(folder+"/Data Analysis/Control Fits/"+contfitname, allcontrolfits+contfitname)        
-#             except FileNotFoundError:
-#                 print("not there motherfucker")
+if os.path.exists(allcontrolfits):
+    shutil.rmtree(allcontrolfits)
+os.makedirs(allcontrolfits)
+for k in range(len(foldername)):
+    data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
+    folder = sorted_fold_path+foldername[k]
+    roi =  np.loadtxt(data_analysis+foldername[k]+'_ROI+Peaks.mpa',skiprows=1).astype(int)
+    for y in range(len(roi[:,0])):
+        for z in range(1,n_theta[k]+1):
+            contfitname = foldername[k] +'_line_' +str("%0d"%(roi[0][0]+y))+'_theta'+str("%0d"%(z))+'_fit.png'
+            try:
+                shutil.copy(folder+"/Data Analysis/Control Fits/"+contfitname, allcontrolfits+contfitname)        
+            except FileNotFoundError:
+                print("not there")
