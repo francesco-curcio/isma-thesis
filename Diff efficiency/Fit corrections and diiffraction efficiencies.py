@@ -33,7 +33,8 @@ foldername.append("79-4U_77c88deg")
 foldername.append("79-8U_76c76deg")
 foldername.append("79-12U_75c64deg")
 foldername.append("79-16U_74c52deg")
-n_theta=[26,46,28,18,16,20,21,20,19,48,43,59,24]  #number of measurements files for each folder (no flat, no compromised data)
+n_theta=[26,46,28,17,16,20,21,20,19,48,43,59,24]  #number of measurements files for each folder (no flat, no compromised data)
+step_theta=[0.03,0.03,0.05,0.05,0.05,0.03,0.03,0.03,0.03,0.03,0.03,0.03,0.03]
 n_pixel = 16384 #number of pixels in one measurement
 
 """
@@ -127,10 +128,10 @@ This block allows to correct the fits
 """
 This block calculates the diffraction efficiencies
 """
-
+plot=0
 def gauss(x, A, x0,sx):
       return A/sx*np.exp(-(x-x0)**2/(2*(sx)**2))
-step=0.1
+
 for k in range(len(foldername)):
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
     matrixes = [np.loadtxt(sorted_fold_path+foldername[k]+"/Matrixes/"+foldername[k]+"_"+str("%03d" % (j,))+".mpa") for j in range (1,n_theta[k]+1)]
@@ -142,7 +143,7 @@ for k in range(len(foldername)):
     roi =  np.loadtxt(data_analysis+foldername[k]+'_ROI+Peaks.mpa',skiprows=1).astype(int)
     data_and_fit  =  np.loadtxt(data_analysis+foldername[k]+'_fit+data.mpa',skiprows=1)
     diff_eff = np.zeros((len(stack[0,0,:]),12))
-    print(foldername[k])
+    #print(foldername[k])
     for z in range(len(stack[0,0,:])):
         zprofile0 = np.zeros(len(stack[0,0,:]))
         zprofile0 += stack[yabsmax,xabsmax,:]
@@ -151,9 +152,6 @@ for k in range(len(foldername)):
         #         zprofile0 += stack[yabsmax+i-1,xabsmax+j-1,:].copy()/6
     zmin1=roi[:,7][roi[:,0]==yabsmax]
     zmin2=roi[:,8][roi[:,0]==yabsmax]
-    fig = plt.figure(figsize=(15,15))
-    ax = fig.add_subplot(111)
-    ax.set_title(foldername[k])
     f2 = interp1d(np.where(zprofile0)[0], zprofile0, kind='cubic')
     zplt=np.linspace(0,len(zprofile0)-1, 10000)
     # if (k==6):
@@ -170,20 +168,34 @@ for k in range(len(foldername)):
         c= zplt1[f2(zplt1)==np.amax(f2(zplt1))]
         z1=zmin1
         z2=zmin2
-    ax.axvline(zmax, color="b")
-    ax.plot(np.where(zprofile0)[0],zprofile0, "ko")
-    ax.plot(zplt,f2(zplt), "b-")
-    ax.axvline(z1, color="r")
-    ax.axvline(z2, color="g")
-    ax.axvline(c, color="k")
+    if (k==0):
+        c=19
+    if (k==4):
+        c=12
+    if (k==6):
+        c=19.1
+    if (k==7):
+        c=16
+    if (k==8):
+        c=18
+    if (k==12):
+        c=23
+    if(plot):    
+        fig = plt.figure(figsize=(15,15))
+        ax = fig.add_subplot(111)
+        ax.set_title(foldername[k])
+        ax.axvline(zmax, color="b")
+        ax.plot(np.where(zprofile0)[0],zprofile0, "ko")
+        ax.plot(zplt,f2(zplt), "b-")
+        ax.axvline(z1, color="r")
+        ax.axvline(z2, color="g")
+        ax.axvline(c, color="k")
     P0m = np.zeros(9)
     P0p = np.zeros(9)
-    print(foldername[k])
+    #print(foldername[k])
     for y in range(len(roi[:,0])):
         for z in range(len(stack[0,0,:])):
-            if (k==6 and z==3):
-                continue
-            diff_eff[z][0]=(z-c)*step
+            diff_eff[z][0]=(z-c)*step_theta[k]
             if data_and_fit[z*len(roi[:,0])+y][1]>0:
                 bckg = data_and_fit[z*len(roi[:,0])+y][2]
                 for j in range(len(P0m)):
@@ -196,10 +208,16 @@ for k in range(len(foldername)):
                 xplt=data[:, 0]
                 color=["r-","g-","k-"]
                 for j in range(3):
-                    if  (P0m[j]>0):
-                        diff_eff[z][2+j*2]=sum(gauss(xplt, P0m[j], -P0m[j+3], P0m[j+6]))
-                        if(j>0):
-                            diff_eff[z][6+j*2]=sum(gauss(xplt, P0p[j], P0p[j+3], P0p[j+6]))
+                    if (P0m[2-j]>0):
+                        diff_eff[z][2+j*2]+=sum(gauss(xplt, P0m[2-j], -P0m[2-j+3], P0m[2-j+6]))+bckg*len(xplt)
+                        diff_eff[z][3+j*2]= diff_eff[z][2+j*2]**0.5 #sum((bckg+gauss(xplt, P0m[2-j], -P0m[2-j+3], P0m[2-j+6]))**0.5)
+                        if (j>0 and P0p[j]>0):
+                            diff_eff[z][6+j*2]+=sum(bckg+gauss(xplt, P0p[j], P0p[j+3], P0p[j+6]))
+                            diff_eff[z][7+j*2]=diff_eff[z][6+j*2]**0.5#sum((bckg+gauss(xplt, P0p[j], P0p[j+3], P0p[j+6]))**0.5)
+            if(k==6 and (z==3 or z==4)):
+                diff_eff[z][:]*=0
+    # if (k==6):
+    #     diff_eff=np.delete(diff_eff, [3,4])
     with open(data_analysis+foldername[k]+'_diff_eff.mpa', 'w') as f:
         np.savetxt(f,diff_eff, header="theta err counts-2 err counts-1 err counts-0 err counts1 err counts1 err", fmt="%.6f")
 

@@ -509,7 +509,7 @@ def distrp3(x,A0,A1,A2,x0,x1,x2,s0,s1,s2):
 def distr1(x, A, x0,sx):
     return A/sx*np.exp(-(x-x0)**2/(2*(sx)**2))
 
-for k in range(5,6):#len(foldername)):
+for k in range(len(foldername)):
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
     controlfits = data_analysis + "Control Fits/" 
     if os.path.exists(controlfits):
