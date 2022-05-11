@@ -62,7 +62,7 @@ for k in range(len(foldername)):
             value=0
             for y in range(1,len(roi[:][0])-1):
                 value+=sum(stack[roi[y][0],roi[y][1]:roi[y][2],z])
-            noise[z] = sum(np.reshape(stack[yabsmax-4,:,z],-1))
+            noise[z] = sum(np.reshape(stack[yabsmax,:,z],-1))
             #print(noise) 
         if(k==6):
             continue

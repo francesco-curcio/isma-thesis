@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 10 16:50:08 2022
+
+@author: aaa
+"""
+
  #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -80,33 +88,15 @@ def ang_gauss(x,x0):
 
 ##############################################################################
 
-n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
-
-LAM= 0.65 #grating constant in micrometers
-G=2*pi/LAM
-bcr1=5.0#scattering lenght x density
-bcr2=0
-bcr3=0
-n_0 =1.
-
-#print(n_1)
-
-def k_jz(theta, j, G,b):
-    k_jz=b*(1-(np.sin(theta)-j*G/b)**2)**0.5
-    return k_jz
-def dq_j (theta, j, G,b):
-    return b*np.cos(theta) - k_jz(theta, j, G, b)
-wl=np.linspace(1., 10., 1000) #wavelenghts
-a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
-for k in range(1,2):#len(foldername)):
-    print(foldername[k])
-    data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
-    diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)   
-    d=78/np.cos(tilt[k]*rad)
-    print(d)
-    th=np.linspace(diff_eff[0,0],diff_eff[-1,0], 100)*rad
+def fit_func(x, d, bcr1, LAM):
+    wl=np.linspace(1., 10., 1000) #wavelenghts
+    a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
+    th=np.linspace(x-3*div,x+3*div, 100)
+    for i in range(1,len(th)-1):
+        if (x>th[i-1] and x<th[i+1]):
+            tx=i
     S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
-    eta=S.copy().real
+    eta = np.zeros((2*n_diff+1,len(th)))
     eta_aus=eta.copy()
     sum_diff = np.zeros(len(th)) 
     for l in range(len(wl)):
@@ -150,21 +140,49 @@ for k in range(1,2):#len(foldername)):
         for j in range(len(eta[0,:])):
             eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])
             eta_ang[i,j]=eta_ang[i,j]/sum(ang_gauss(th,th[j]))
+    return eta_ang[0,tx]
+
+
+
+
+
+n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
+
+LAM= 0.65 #grating constant in micrometers
+G=2*pi/LAM
+bcr1=5.0#scattering lenght x density
+bcr2=0
+bcr3=0
+n_0 =1.
+
+#print(n_1)
+
+def k_jz(theta, j, G,b):
+    k_jz=b*(1-(np.sin(theta)-j*G/b)**2)**0.5
+    return k_jz
+def dq_j (theta, j, G,b):
+    return b*np.cos(theta) - k_jz(theta, j, G, b)
+for k in range(1,2):#len(foldername)):
+    print(foldername[k])
+    data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
+    diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)   
+    d=78/np.cos(tilt[k]*rad)
+    xplt=np.linspace(diff_eff[0,0],diff_eff[-1,0], 10)*rad
     # fig = plt.figure(figsize=(15,15))
     # ax = fig.add_subplot(111)
     fig, ax = plt.subplots(n_diff+2,figsize=(10,10))
     ax[0].set_title(foldername[k])
-    ax[0].plot(th,eta[n_diff,:])
-    ax[0].plot(th,eta_ang[n_diff,:], "--")
+    #ax[0].plot(th,eta[n_diff,:])
+    ax[0].plot(xplt,fit_func(xplt, d, bcr1, LAM))
     ax[0].plot(diff_eff[:,0]*rad,diff_eff[:,2*2+2],'o')
     for i in range(1,n_diff+1):
-        ax[i].plot(th,eta[n_diff-i,:])
-        ax[i].plot(th,eta[n_diff+i,:])   
-        ax[i].plot(th,eta_ang[n_diff-i,:], "--")
-        ax[i].plot(th,eta_ang[n_diff+i,:], "--")
+        #ax[i].plot(th,eta[n_diff-i,:])
+        #ax[i].plot(th,eta[n_diff+i,:])   
+        # ax[i].plot(th,eta_ang[n_diff-i,:], "--")
+        # ax[i].plot(th,eta_ang[n_diff+i,:], "--")
         if i<3:
             ax[i].plot(diff_eff[:,0]*rad,diff_eff[:,6-2*i],'o')
             ax[i].plot(diff_eff[:,0]*rad,diff_eff[:,6+2*i],'o')
-    ax[n_diff+1].plot(th, sum_diff)
+    # ax[n_diff+1].plot(th, sum_diff)
     #ax[n_diff+1].set_ylim([0.5,1.5])
     #   plt.errorbar(diff_eff[:,0],diff_eff[:,2*j+2],yerr=diff_eff[:,2*j+1],capsize=1)
