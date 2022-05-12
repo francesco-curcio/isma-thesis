@@ -58,7 +58,7 @@ def func(l,A,mu,sig):
 def rho(l,A,mu,sig):
     return func(l,A,mu,sig)*erfc((mu+A*sig**2-l)/(np.sqrt(2)*sig))
 lambda_par=1595.7292122046995	#+/-	147.471394720765
-mu=3.5e-3#0.004632543663155012	#+/-	5.46776175965519e-05
+mu=3.2e-3#0.004632543663155012	#+/-	5.46776175965519e-05
 sigma=0.0006873016655595522	
 ##############################################################################
 
@@ -73,12 +73,12 @@ def ang_gauss(x,x0):
 
 ##############################################################################
 
-n_diff= 3 #number of peaks for each side, for example: n=2 for 5 diffracted waves
+n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
 
 LAM= 0.5 #grating constant in micrometers
 G=2*pi/LAM
 bcr1=5.0 #scattering lenght x density
-bcr2=-2.2
+bcr2=-2
 bcr3=0
 n_0 =1.
 
@@ -89,8 +89,7 @@ def k_jz(theta, j, G,b):
     return k_jz
 def dq_j (theta, j, G,b):
     return b*np.cos(theta) - k_jz(theta, j, G, b)
-wl=np.linspace(2., 8., 10) #wavelenghts
-a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
+ #wavelenghts
 for k in range(1,2):#len(foldername)):
     print(foldername[k])
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
@@ -101,68 +100,22 @@ for k in range(1,2):#len(foldername)):
     diff_eff_fit=np.zeros((5, len(diff_eff[:,5])))
     diff_eff_fit[2,:]=diff_eff[:,2*2+2].copy()
     for i in range(1,3):
-        diff_eff_fit[1-i,:]=diff_eff[:,6-2*i].copy()
-        diff_eff_fit[5-i,:]=diff_eff[:,6+2*i].copy()
+        diff_eff_fit[2-i,:]=diff_eff[:,6-2*i].copy()
+        diff_eff_fit[2+i,:]=diff_eff[:,6+2*i].copy()
     d=78/np.cos(tilt[k]*rad)
     #print(d)
     thx=np.linspace(diff_eff[0,0]*rad,diff_eff[-1,0]*rad, 100)
     
-    def fit_func(x, bcr1, bcr2):
-        th=np.linspace(x[0]*rad-3*div,x[-1]*rad+3*div, 100)
-        S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
-        eta=S.copy().real
-        eta_aus=eta.copy()
-        sum_diff = np.zeros(len(th))
-        for l in range(len(wl)):
-            lam=wl[l]*1e-3 #single wavelenght in micrometers
-            b=2*pi/lam #beta value 
-            n_1 = bcr1*2*pi/b**2
-            n_2 = bcr2*2*pi/b**2
-            n_3 = bcr3*2*pi/b**2
-            for t in range(len(th)):
-                A = np.zeros((2*n_diff+1,2*n_diff+1), dtype=np.complex)
-                for i in range(len(A[0])):
-                    A[i][i]=b**2*(n_0**2-1)/(2*k_jz(th[t],i-n_diff,G,b))-dq_j(th[t],i-n_diff,G,b)
-                    if(i+1<len(A[0])):
-                        A[i][i+1]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
-                        A[i+1][i]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
-                    if(i+2<len(A[0]) and bcr2!=0):
-                        A[i][i+2]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
-                        A[i+2][i]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
-                    if(i+3<len(A[0]) and bcr3!=0):
-                        A[i][i+3]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
-                        A[i+3][i]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
-                A=-1j*A
-                w,v = np.linalg.eig(A)
-                v0=np.zeros(2*n_diff+1)
-                v0[n_diff]=1
-                c = np.linalg.solve(v,v0)
-                for i in range(len(w)):
-                    v[:,i]=v[:,i]*c[i]*np.exp(w[i]*d)
-                for i in range(len(S[:,0])):
-                    S[i,t] = sum(v[i,:])
-            for t in range(len(th)):
-                for i in range(2*n_diff+1):
-                    eta_aus[i,t] = abs(S[i,t])**2*k_jz(th[t],i-n_diff,G,b)/(b*np.cos(th[t]))
-                sum_diff[t] = sum(eta[:,t])
-            eta+=eta_aus*a[l]
-        eta_ang = eta.copy()
-        for i in range(len(eta[:,0])):
-            for j in range(len(eta[0,:])):
-                eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])
-                eta_ang[i,j]=eta_ang[i,j]/sum(ang_gauss(th,th[j]))
-        eta_fit=np.zeros(len(diff_eff))#(2*n_diff+1,len(diff_eff[:,0])))
-        tx=0
+    def fit_func(x, bcr1, bcr2, mu1):
+        wl=np.linspace(2., 9., 5)
+        a = rho(wl*1e-3,lambda_par, mu1, sigma)/sum(rho(wl*1e-3,lambda_par, mu1, sigma))
+        th=np.linspace(diff_eff[0,0]*rad-3*div,diff_eff[-1,0]*rad+3*div, 100)
+        tx=np.zeros(len(diff_eff[:,0]),dtype=int)
         for i in range(len(diff_eff[:,0])):
             for j in range(1,len(th)-1):
                 if(th[j-1]<=x[i]*rad and th[j+1]>=x[i]*rad):
-                    tx=j
-            eta_fit[i]=eta_ang[n_diff,tx]
-        return eta_fit
-    P0=[bcr1, bcr2]
-    p,cov=fit(fit_func,diff_eff[:,0],diff_eff_fit[2,:], p0=P0)
-    print(p)
-    def plot_func(th, bcr1, bcr2):
+                    tx[i]=j
+                    # th[j]=x[j]
         S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
         eta=S.copy().real
         eta_aus=eta.copy()
@@ -203,10 +156,72 @@ for k in range(1,2):#len(foldername)):
         eta_ang = eta.copy()
         for i in range(len(eta[:,0])):
             for j in range(len(eta[0,:])):
-                eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])
-                eta_ang[i,j]=eta_ang[i,j]/sum(ang_gauss(th,th[j]))
+                eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])/sum(ang_gauss(th,th[j]))
+        eta_fit=np.zeros((2*n_diff+1,len(diff_eff[:,0])))
+        for i in range(len(tx)):
+            eta_fit[:,i]=eta_ang[:,tx[i]]
+        aaa=eta_fit.ravel()
+        return aaa
+    #P0=[bcr1, bcr2, mu]
+    #P0=[8.08378574e+00, 3.72101573e-03]
+    #P0=[7.06707265e+00, -1.86325033e+00 , 3.27131244e-03]
+    P0=[ 6.47186985e+00, -1.30961381e+00,  3.52751865e-03]
+    fff=diff_eff_fit.ravel()
+    xxx=np.zeros(len(diff_eff[:,0])*5)
+    xxx[0:len(diff_eff[:,0])]=diff_eff[:,0]
+    #plt.plot(fff)
+    p,cov=fit(fit_func,xxx,fff, p0=P0)
+    #p,cov=fit(fit_func,diff_eff[:,0],diff_eff_fit[2,:], p0=P0)
+    print(p)
+    n_diff=3
+    def plot_func(th, bcr1, bcr2, mu1):
+        wl=np.linspace(1., 9., 10)
+        a = rho(wl*1e-3,lambda_par, mu1, sigma)/sum(rho(wl*1e-3,lambda_par, mu1, sigma))
+        S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
+        eta=S.copy().real
+        eta_aus=eta.copy()
+        sum_diff = np.zeros(len(th))
+        for l in range(len(wl)):
+            lam=wl[l]*1e-3 #single wavelenght in micrometers
+            b=2*pi/lam #beta value 
+            n_1 = bcr1*2*pi/b**2
+            n_2 = bcr2*2*pi/b**2
+            n_3 = bcr3*2*pi/b**2
+            for t in range(len(th)):
+                A = np.zeros((2*n_diff+1,2*n_diff+1), dtype=np.complex)
+                for i in range(len(A[0])):
+                    A[i][i]=b**2*(n_0**2-1)/(2*k_jz(th[t],i-n_diff,G,b))-dq_j(th[t],i-n_diff,G,b)
+                    if(i+1<len(A[0])):
+                        A[i][i+1]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+1][i]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
+                    if(i+2<len(A[0]) and bcr2!=0):
+                        A[i][i+2]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+2][i]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
+                    if(i+3<len(A[0]) and bcr3!=0):
+                        A[i][i+3]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+3][i]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
+                A=-1j*A
+                w,v = np.linalg.eig(A)
+                v0=np.zeros(2*n_diff+1)
+                v0[n_diff]=1
+                c = np.linalg.solve(v,v0)
+                for i in range(len(w)):
+                    v[:,i]=v[:,i]*c[i]*np.exp(w[i]*d)
+                for i in range(len(S[:,0])):
+                    S[i,t] = sum(v[i,:])
+            for t in range(len(th)):
+                for i in range(2*n_diff+1):
+                    eta_aus[i,t] = abs(S[i,t])**2*k_jz(th[t],i-n_diff,G,b)/(b*np.cos(th[t]))
+                sum_diff[t] = sum(eta[:,t])
+            eta+=eta_aus*a[l]
+        eta_ang = eta.copy()
+        for i in range(len(eta[:,0])):
+            for j in range(len(eta[0,:])):
+                eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])/sum(ang_gauss(th,th[j]))
         return eta_ang
     eta=plot_func(thx, *p)
+    # bbb=eta.ravel()
+    # plt.plot(bbb)
     fig, ax = plt.subplots(n_diff+2,figsize=(10,10))
     ax[0].set_title(foldername[k])
     # ax[0].plot(th,eta[n_diff,:])
