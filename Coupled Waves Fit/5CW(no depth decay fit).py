@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May 10 16:50:08 2022
-
-@author: aaa
-"""
-
- #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun May  1 15:09:28 2022
-
-@author: aaa
-"""
 """
 This module defines the vector field for 5 coupled wave equations
 (without a decay, Uchelnik) and first and second harmonics in the modulation; phase: 0 or pi (sign of n2).
@@ -73,14 +58,14 @@ def func(l,A,mu,sig):
 def rho(l,A,mu,sig):
     return func(l,A,mu,sig)*erfc((mu+A*sig**2-l)/(np.sqrt(2)*sig))
 lambda_par=1595.7292122046995	#+/-	147.471394720765
-mu=0.004632543663155012	#+/-	5.46776175965519e-05
+mu=3.5e-3#0.004632543663155012	#+/-	5.46776175965519e-05
 sigma=0.0006873016655595522	
 ##############################################################################
 
 """
 Angular distribution: Gaussian
 """
-div=0.001
+div=0.001/2
 def ang_gauss(x,x0):
     sig=div
     return 1/((2*pi)**0.5*sig)*np.exp(-(x-x0)**2/(2*sig**2))
@@ -88,70 +73,12 @@ def ang_gauss(x,x0):
 
 ##############################################################################
 
-def fit_func(x, d, bcr1, LAM):
-    wl=np.linspace(1., 10., 1000) #wavelenghts
-    a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
-    th=np.linspace(x-3*div,x+3*div, 100)
-    for i in range(1,len(th)-1):
-        if (x>th[i-1] and x<th[i+1]):
-            tx=i
-    S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
-    eta = np.zeros((2*n_diff+1,len(th)))
-    eta_aus=eta.copy()
-    sum_diff = np.zeros(len(th)) 
-    for l in range(len(wl)):
-        lam=wl[l]*1e-3 #single wavelenght in micrometers
-        b=2*pi/lam #beta value 
-        n_1 = bcr1*2*pi/b**2
-        n_2 = bcr2*2*pi/b**2
-        n_3 = bcr3*2*pi/b**2
-        for t in range(len(th)):
-            A = np.zeros((2*n_diff+1,2*n_diff+1), dtype=np.complex)
-            for i in range(len(A[0])):
-                A[i][i]=b**2*(n_0**2-1)/(2*k_jz(th[t],i-n_diff,G,b))-dq_j(th[t],i-n_diff,G,b)
-                if(i+1<len(A[0])):
-                    A[i][i+1]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
-                    A[i+1][i]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
-                if(i+2<len(A[0]) and bcr2!=0):
-                    A[i][i+2]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
-                    A[i+2][i]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
-                if(i+3<len(A[0]) and bcr3!=0):
-                    A[i][i+3]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
-                    A[i+3][i]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
-            A=-1j*A
-            w,v = np.linalg.eig(A)
-            v0=np.zeros(2*n_diff+1)
-            v0[n_diff]=1
-            c = np.linalg.solve(v,v0)
-            for i in range(len(w)):
-                v[:,i]=v[:,i]*c[i]*np.exp(w[i]*d)
-            for i in range(len(S[:,0])):
-                S[i,t] = sum(v[i,:])
-        for t in range(len(th)):
-            for i in range(2*n_diff+1):
-                eta_aus[i,t] = abs(S[i,t])**2*k_jz(th[t],i-n_diff,G,b)/(b*np.cos(th[t]))
-            sum_diff[t] = sum(eta[:,t])
-        eta+=a[l]*eta_aus
-    for i in range(len(diff_eff[:,0])):
-            s=sum(diff_eff[i,1:])
-            diff_eff[i,1:]=diff_eff[i,1:]/s
-    eta_ang = eta.copy()
-    for i in range(len(eta[:,0])):
-        for j in range(len(eta[0,:])):
-            eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])
-            eta_ang[i,j]=eta_ang[i,j]/sum(ang_gauss(th,th[j]))
-    return eta_ang[0,tx]
-
-
-
-
-
 n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
 
-LAM= 0.65 #grating constant in micrometers
+LAM= 0.5 #grating constant in micrometers
 G=2*pi/LAM
-bcr1=5.0#scattering lenght x density
-bcr2=0
+bcr1=5.0 #scattering lenght x density
+bcr2=-2.2
 bcr3=0
 n_0 =1.
 
@@ -162,22 +89,89 @@ def k_jz(theta, j, G,b):
     return k_jz
 def dq_j (theta, j, G,b):
     return b*np.cos(theta) - k_jz(theta, j, G, b)
+wl=np.linspace(2., 8., 50) #wavelenghts
+a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
 for k in range(1,2):#len(foldername)):
     print(foldername[k])
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
-    diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)   
+    diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)  
+    for i in range(len(diff_eff[:,0])):
+        s=sum(diff_eff[i,1:])
+        diff_eff[i,1:]=diff_eff[i,1:]/s
+    diff_eff_fit=np.zeros((5, len(diff_eff[:,5])))
+    print(diff_eff_fit.shape)
+    diff_eff_fit[2,:]=diff_eff[:,2*2+2].copy()
+    for i in range(1,3):
+        diff_eff_fit[1-i,:]=diff_eff[:,6-2*i].copy()
+        diff_eff_fit[5-i,:]=diff_eff[:,6+2*i].copy()
     d=78/np.cos(tilt[k]*rad)
-    xplt=np.linspace(diff_eff[0,0],diff_eff[-1,0], 10)*rad
-    # fig = plt.figure(figsize=(15,15))
-    # ax = fig.add_subplot(111)
+    print(d)
+    thx=np.linspace(diff_eff[0,0]*rad,diff_eff[-1,0]*rad, 1000)
+    def fit_func(x, bcr1, bcr2):
+        th=np.linspace(x[0]*rad-3*div,x[-1]*rad+3*div, 500)
+        S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
+        eta=S.copy().real
+        eta_aus=eta.copy()
+        sum_diff = np.zeros(len(th))
+        for l in range(len(wl)):
+            lam=wl[l]*1e-3 #single wavelenght in micrometers
+            b=2*pi/lam #beta value 
+            n_1 = bcr1*2*pi/b**2
+            n_2 = bcr2*2*pi/b**2
+            n_3 = bcr3*2*pi/b**2
+            for t in range(len(th)):
+                A = np.zeros((2*n_diff+1,2*n_diff+1), dtype=np.complex)
+                for i in range(len(A[0])):
+                    A[i][i]=b**2*(n_0**2-1)/(2*k_jz(th[t],i-n_diff,G,b))-dq_j(th[t],i-n_diff,G,b)
+                    if(i+1<len(A[0])):
+                        A[i][i+1]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+1][i]=b**2*n_0*n_1/(2*k_jz(th[t],i-n_diff,G,b))
+                    if(i+2<len(A[0]) and bcr2!=0):
+                        A[i][i+2]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+2][i]=b**2*n_0*n_2/(2*k_jz(th[t],i-n_diff,G,b))
+                    if(i+3<len(A[0]) and bcr3!=0):
+                        A[i][i+3]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
+                        A[i+3][i]=-b**2*n_0*n_3/(2*k_jz(th[t],i-n_diff,G,b))
+                A=-1j*A
+                w,v = np.linalg.eig(A)
+                v0=np.zeros(2*n_diff+1)
+                v0[n_diff]=1
+                c = np.linalg.solve(v,v0)
+                for i in range(len(w)):
+                    v[:,i]=v[:,i]*c[i]*np.exp(w[i]*d)
+                for i in range(len(S[:,0])):
+                    S[i,t] = sum(v[i,:])
+            for t in range(len(th)):
+                for i in range(2*n_diff+1):
+                    eta_aus[i,t] = abs(S[i,t])**2*k_jz(th[t],i-n_diff,G,b)/(b*np.cos(th[t]))
+                sum_diff[t] = sum(eta[:,t])
+            eta+=eta_aus*a[l]
+        eta_ang = eta.copy()
+        for i in range(len(eta[:,0])):
+            for j in range(len(eta[0,:])):
+                eta_ang[i,j] = sum(ang_gauss(th,th[j])*eta[i,:])
+                eta_ang[i,j]=eta_ang[i,j]/sum(ang_gauss(th,th[j]))
+        eta_fit=np.zeros(len(diff_eff))#(2*n_diff+1,len(diff_eff[:,0])))
+        tx=0
+        for i in range(len(diff_eff[:,0])):
+            for j in range(1,len(th)-1):
+                if(th[j-1]<=x[i]*rad and th[j+1]>=x[i]*rad):
+                    tx=j
+            eta_fit[i]=eta_ang[n_diff,tx]
+        return eta_fit
+    P0=[bcr1, bcr2]
+
+    p,cov=fit(fit_func,diff_eff[:,0],diff_eff_fit[2,:], p0=P0)
     fig, ax = plt.subplots(n_diff+2,figsize=(10,10))
     ax[0].set_title(foldername[k])
-    #ax[0].plot(th,eta[n_diff,:])
-    ax[0].plot(xplt,fit_func(xplt, d, bcr1, LAM))
-    ax[0].plot(diff_eff[:,0]*rad,diff_eff[:,2*2+2],'o')
+    # ax[0].plot(th,eta[n_diff,:])
+    # ax[0].plot(th,eta_ang[n_diff,:], "--")
+    print(p)
+    ax[0].plot(diff_eff[:,0]*rad,fit_func(diff_eff[:,0], *p))
+    ax[0].plot(diff_eff[:,0]*rad,diff_eff_fit[2,:],'o')
     for i in range(1,n_diff+1):
-        #ax[i].plot(th,eta[n_diff-i,:])
-        #ax[i].plot(th,eta[n_diff+i,:])   
+        # ax[i].plot(th,eta[n_diff-i,:])
+        # ax[i].plot(th,eta[n_diff+i,:])   
         # ax[i].plot(th,eta_ang[n_diff-i,:], "--")
         # ax[i].plot(th,eta_ang[n_diff+i,:], "--")
         if i<3:

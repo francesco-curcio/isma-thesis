@@ -49,6 +49,7 @@ foldername.append("79-4U_77c88deg")
 foldername.append("79-8U_76c76deg")
 foldername.append("79-12U_75c64deg")
 foldername.append("79-16U_74c52deg")
+tilt=[0,40,48,61,69,71,79,80,81,79,79,79,79]
 n_theta=[26,46,28,17,16,20,21,20,19,48,43,59,24]  #number of measurements files for each folder (no flat, no compromised data)
 n_pixel = 16384 #number of pixels in one measurement
 """
@@ -56,14 +57,13 @@ This block fits the diffraction efficiencies n(x)= n_0 + n_1 cos(Gx)
 """
 
 n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
-lam= 3.1e-3 #incoming wavelenght in micrometers
+lam= 3.5e-3 #incoming wavelenght in micrometers
 LAM= 0.5 #grating constant in micrometers
-d=78
 b=2*pi/lam #beta value 
 G=2*pi/LAM
-bcr1=3.0#scattering lenght x density
+bcr1=7.0#scattering lenght x density
 bcr2=0.
-n_0 =1.001
+n_0 =1.00
 n_1 = bcr1*2*pi/b**2 
 #print(n_1)
 
@@ -72,7 +72,8 @@ def k_jz(theta, j, G):
     return k_jz
 def dq_j (theta, j, G):
     return b*np.cos(theta) - k_jz(theta, j, G)
-for k in range(0,1):#len(foldername)):
+for k in range(1,2):#len(foldername)):
+    d=78/np.cos(tilt[k]*rad)
     data_analysis = sorted_fold_path+foldername[k]+"/Data Analysis/"
     diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)    
     th=np.linspace(diff_eff[0,0],diff_eff[-1,0], 1000)*rad

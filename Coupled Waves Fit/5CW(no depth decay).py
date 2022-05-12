@@ -65,14 +65,14 @@ def func(l,A,mu,sig):
 def rho(l,A,mu,sig):
     return func(l,A,mu,sig)*erfc((mu+A*sig**2-l)/(np.sqrt(2)*sig))
 lambda_par=1595.7292122046995	#+/-	147.471394720765
-mu=0.004632543663155012	#+/-	5.46776175965519e-05
+mu=3.5e-3#0.004632543663155012	#+/-	5.46776175965519e-05
 sigma=0.0006873016655595522	
 ##############################################################################
 
 """
 Angular distribution: Gaussian
 """
-div=0.001
+div=0.001/2
 def ang_gauss(x,x0):
     sig=div
     return 1/((2*pi)**0.5*sig)*np.exp(-(x-x0)**2/(2*sig**2))
@@ -80,12 +80,12 @@ def ang_gauss(x,x0):
 
 ##############################################################################
 
-n_diff= 2 #number of peaks for each side, for example: n=2 for 5 diffracted waves
+n_diff= 3 #number of peaks for each side, for example: n=2 for 5 diffracted waves
 
-LAM= 0.65 #grating constant in micrometers
+LAM= 0.5 #grating constant in micrometers
 G=2*pi/LAM
-bcr1=5.0#scattering lenght x density
-bcr2=0
+bcr1=5.0 #scattering lenght x density
+bcr2=-2.
 bcr3=0
 n_0 =1.
 
@@ -96,7 +96,7 @@ def k_jz(theta, j, G,b):
     return k_jz
 def dq_j (theta, j, G,b):
     return b*np.cos(theta) - k_jz(theta, j, G, b)
-wl=np.linspace(1., 10., 1000) #wavelenghts
+wl=np.linspace(2., 10., 500) #wavelenghts
 a = rho(wl*1e-3,lambda_par, mu, sigma)/sum(rho(wl*1e-3,lambda_par, mu, sigma))
 for k in range(1,2):#len(foldername)):
     print(foldername[k])
@@ -104,7 +104,7 @@ for k in range(1,2):#len(foldername)):
     diff_eff =  np.loadtxt(data_analysis+foldername[k]+'_diff_eff.mpa',skiprows=1)   
     d=78/np.cos(tilt[k]*rad)
     print(d)
-    th=np.linspace(diff_eff[0,0],diff_eff[-1,0], 100)*rad
+    th=np.linspace(diff_eff[0,0],diff_eff[-1,0], 500)*rad
     S=np.zeros((2*n_diff+1,len(th)),dtype=np.complex)
     eta=S.copy().real
     eta_aus=eta.copy()
@@ -141,7 +141,7 @@ for k in range(1,2):#len(foldername)):
             for i in range(2*n_diff+1):
                 eta_aus[i,t] = abs(S[i,t])**2*k_jz(th[t],i-n_diff,G,b)/(b*np.cos(th[t]))
             sum_diff[t] = sum(eta[:,t])
-        eta+=a[l]*eta_aus
+        eta+=eta_aus*a[l]
     for i in range(len(diff_eff[:,0])):
             s=sum(diff_eff[i,1:])
             diff_eff[i,1:]=diff_eff[i,1:]/s
